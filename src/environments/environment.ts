@@ -4,5 +4,9 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 export const environment = {
-  production: false
+  production: false ,
+  apiURL: 'http://localhost:3000/posts',
+  gLabelPropertyName: 'envname',
+  gDataPropertyNames: 'live,stop,kill,backup',
+  gChartTypes: 'bar,line,doughnut,radar,pie,polarArea'
 };
