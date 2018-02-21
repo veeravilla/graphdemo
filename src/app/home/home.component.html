@@ -1,28 +1,21 @@
-<!--The content below is only a placeholder and can be replaced.-->
-<div style="text-align:center">
-  <h1>
-    Welcome to UI Demo  <button (click)="randomize()">Update</button>
-  </h1>
-  
-  	<div *ngIf="gData.length > 0" style="display: block height:40vh; width:80vw">
-	    <canvas baseChart
-	            [datasets]="gData"
-	            [labels]="gLabels"
-	            [options]="chartOptions"
-	            [legend]="chartLegend"
-	            [chartType]="chartType"
-	            (chartHover)="chartHovered($event)"
-	            (chartClick)="chartClicked($event)"></canvas>
-   </div>
+<div class="container">
+	<div class="row">
+	   <div class="col">
+		    <app-graph-instances-count></app-graph-instances-count>
+	   </div>
+	   <div class="col">
+		    <app-graph-instances-state></app-graph-instances-state>
+	   </div>
+	   <div class="col">
+		 	<app-graph-type-instances-count></app-graph-type-instances-count>
+	   </div>
+	</div>
+	<div class="row">
+	   <div  class="col">
+		   <app-instance-details-grid></app-instance-details-grid>
+	   </div>
+	</div>
+	<div class="row">
+		<div class="col"><button (click)="randomize()" class="btn btn-primary">Refresh</button></div>
+	</div>
 </div>
-<!--   After Options ::: [colors]="barChartColors" 
-
-	   <canvas baseChart
-            [datasets]="barChartData"
-            [labels]="barChartLabels"
-            [options]="barChartOptions"
-            [legend]="barChartLegend"
-            [chartType]="barChartType"
-            (chartHover)="chartHovered($event)"
-            (chartClick)="chartClicked($event)"></canvas>
--->

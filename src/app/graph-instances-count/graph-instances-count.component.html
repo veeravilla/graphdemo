@@ -1,0 +1,10 @@
+<div *ngIf="pieChartData.length > 0" style="display:block">
+<canvas baseChart
+		            [datasets]="pieChartData"
+		            [labels]="pieChartLabels"
+		            [options]="chartOptions"
+		            [legend]="chartLegend"
+		            [chartType]="pieChartType"
+		            (chartHover)="chartHovered($event)"
+		            (chartClick)="chartClicked($event)"></canvas>
+</div>

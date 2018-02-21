@@ -5,8 +5,30 @@
 
 export const environment = {
   production: false ,
-  apiURL: 'http://localhost:3000/posts',
-  gLabelPropertyName: 'envname',
-  gDataPropertyNames: 'live,stop,kill,backup',
+ // apiURL: 'http://sintec-cloudmanager.cloud.operative.com:8080/v1/cloud-management/managed-instances/count',
+  
+  // Instance API Count
+  apiInstanceCountURL: 'http://localhost:3000/count',
+  countLabelPropertyName: 'environment',
+  countDataPropertyNames: 'count',
+  
+  // State API
+  // http://sintec-cloudmanager.cloud.operative.com:8080/v1/cloud-management/managed-instances/state
+  apiStateURL: 'http://localhost:3000/state',
+  stateLabelProperty: 'environment',
+  stateDataPropertyNames: 'runningCnt,stoppedCnt',
+  
+  // Type Count URL
+  // http://sintec-cloudmanager.cloud.operative.com:8080/v1/cloud-management/managed-instances/types/Count
+  apiTypeCountURL: 'http://localhost:3000/typecount',
+  typeCountLabelProperty: 'instanceType',
+  typeCountAPIPropertyNames: 'count',
+  
+  // Instance Type Details API
+  // http://sintec-cloudmanager.cloud.operative.com:8080/v1/cloud-management/managed-instances/types
+  apiInstanceDetailsURL: 'http://localhost:3000/typedetails',
+  instanceDataPropertyNames: 'count',
+  
+  
   gChartTypes: 'bar,line,doughnut,radar,pie,polarArea'
 };

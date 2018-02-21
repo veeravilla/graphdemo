@@ -1,0 +1,28 @@
+<accordion>
+  <accordion-group *ngFor="let rowArray of apiResponse" heading="{{rowArray.name}} -  {{rowArray.data.length}}">
+		<table class="table table-bordered">
+			<thead>
+				<tr>
+					<th scope="col">InstanceID</th>
+					<th scope="col">InstanceName</th>
+					<th scope="col">InstanceType</th>
+					<th scope="col">instanceState</th>
+					<th scope="col">instanceEnv</th>
+					<th scope="col">InstanceIp</th>
+					<th scope="col">instanceCreatedBy</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr *ngFor="let row of rowArray.data">
+					<th class="col-2">{{row.instanceId}}</th>
+					<td class="col-5">{{row.instanceName}}</td>
+					<td class="col-1">{{row.instanceType}}</td>
+					<td class="col-1">{{row.instanceState}}</td>
+					<td class="col-1">{{row.instanceEnv}}</td>
+					<td class="col-1">{{row.instanceIp}}</td>
+					<td class="col-1">{{row.instanceCreatedBy}}</td>
+				</tr>
+			</tbody>
+		</table>
+  </accordion-group>
+</accordion>
