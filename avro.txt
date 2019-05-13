@@ -1,0 +1,544 @@
+
+
+Chapter 7. Avro Schemas
+
+Avro is used to define the data schema for a record's value. This schema describes the fields allowed in the value, along with their data types.
+
+You apply a schema to the value portion of an Oracle NoSQL Database record using Avro bindings. These bindings are used to serialize values before writing them, and to deserialize values after reading them. The usage of these bindings requires your applications to use the Avro data format, which means that each stored value is associated with a schema.
+
+The use of Avro schemas allows serialized values to be stored in a very space-efficient binary format. Each value is stored without any metadata other than a small internal schema identifier, between 1 and 4 bytes in size. One such reference is stored per key-value pair.
+In this way, the serialized Avro data format is always associated with the schema used to serialize it, with minimal overhead. This association is made transparently to the application, and the internal schema identifier is managed by the bindings supplied by the AvroCatalog class. The application never sees or uses the internal identifier directly.
+
+The Avro API is the result of an open source project provided by the Apache Software
+Foundation. It is formally described here: http://avro.apache.org.
+
+In addition, Avro makes use of the Jackson APIs for parsing JSON. This is likely to be of interest to you if you are integrating Oracle NoSQL Database with a JSON-based system. Jackson is formally described here: http://wiki.fasterxml.com/JacksonHome.
+
+Creating Avro Schemas
+
+An Avro schema is created using JSON format. JSON is short for JavaScript Object Notation, and it is a lightweight, text-based data interchange format that is intended to be easy for humans to read and write. JSON is described in a great many places, both on the web and in after-market documentation. However, it is formally described in the IETF's RFC 4627, which can be found at http://www.ietf.org/rfc/rfc4627.txt?number=4627.
+
+To describe an Avro schema, you create a JSON record which identifies the schema, like this:
+
+{
+"type": "record", "namespace": "com.example", "name": "FullName", "fields": [
+{ "name": "first", "type": "string" },
+{ "name": "last", "type": "string" }
+]
+}
+
+The above example is a JSON record which describes schema that might be used by the value portion of a key-value pair in the store. It describes a schema for a person's full name.
+
+Notice that for the record, there are four fields:
+ 
+
+• type
+
+Identifies the JSON field type. For Avro schemas, this must always be record when it is specified at the schema's top level. The type record means that there will be multiple fields defined.
+
+• namespace
+
+This identifies the namespace in which the object lives. Essentially, this is meant to be a URI that has meaning to you and your organization. It is used to differentiate one schema type from another should they share the same name.
+
+• name
+
+This is the schema name which, when combined with the namespace, uniquely identifies
+the schema within the store. In the above example, the fully qualified name for the schema is com.example.FullName.
+
+• fields
+
+This is the actual schema definition. It defines what fields are contained in the value, and the data type for each field. A field can be a simple data type, such as an integer or a string, or it can be complex data. We describe this in more detail, below.
+
+Note that schema field names must begin with [A-Za-z_], and subsequently contain only [A- Za-z0-9_].
+
+To use the schema, you must define it in a flat text file, and then add the schema to your store using the appropriate command line call. You must also somehow provide it to your
+code. The schema that your code is using must correspond to the schema that has been added to your store.
+
+The remainder of this chapter describes schemas and how to add them to your store. For a description of how to use schemas in your code, see Avro Bindings (page 44).
+
+Avro Schema Definitions
+
+Avro schema definitions are JSON records. Because it is a record, it can define multiple fields which are organized in a JSON array. Each such field identifies the field's name as well as its type. The type can be something simple, like an integer, or something complex, like another record.
+
+For example, the following trivial Avro schema definition can be used for a value that contains just someone's age:
+
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "age", "type" : "int"}]
+}
+ 
+
+Of course, if your data storage needs are this simple, you can just use a byte-array to store the integer in the store. (Although this is not considered best practice.)
+
+Notice in the previous example that the top-level type for the schema definition is of type record, even though we are defining a single-field schema. Oracle NoSQL Database requires you to use record for the top-level type, even if you only need one field.
+
+Also, it is best-practice to define default values for the fields in your schema. While this is optional, should you ever decide to change your schema, it can save you a lot of trouble. To define a default value, use the default attribute:
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "age", "type" : "int", "default" : -1}]
+}
+
+You almost certainly will not be using single-field definitions. To add multiple fields, specify an array in the fields field. For example:
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "username", "type" : "string", "default" : "NONE"},
+
+{"name" : "age", "type" : "int", "default" : -1},
+
+{"name" : "phone", "type" : "string", "default" : "NONE"},
+
+{"name" : "housenum", "type" : "string", "default" : "NONE"},
+
+{"name" : "street", "type" : "string", "default" : "NONE"},
+
+{"name" : "city", "type" : "string", "default" : "NONE"},
+
+{"name" : "state_province", "type" : "string",
+ 
+
+"default" : "NONE"},
+
+{"name" : "country", "type" : "string", "default" : "NONE"},
+
+{"name" : "zip", "type" : "string", "default" : "NONE"}]
+}
+
+The above schema definition provides a lot of information. However, simple as it is, you could add some more structure to it by using an embedded record:
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "username", "type" : "string", "default" : "NONE"},
+
+{"name" : "age", "type" : "int", "default" : -1},
+
+{"name" : "phone", "type" : "string", "default" : "NONE"},
+
+{"name" : "housenum", "type" : "string", "default" : "NONE"},
+
+{"name" : "address", "type" : {
+"type" : "record",
+"name" : "mailing_address", "fields" : [
+{"name" : "street", "type" : "string", "default" : "NONE"},
+
+{"name" : "city", "type" : "string", "default" : "NONE"},
+
+{"name" : "state_prov", "type" : "string", "default" : "NONE"},
+ 
+
+
+{"name" : "country", "type" : "string", "default" : "NONE"},
+
+ 
+
+
+
+
+
+}
+]
+}
+
+Note
+ 
+{"name" : "zip", "type" : "string", "default" : "NONE"}
+]}
+ 
+
+It is unlikely that you will need just one record definition for your entire store. Probably you will have more than one type of record. You handle this by providing each of your record definitions individually in separate files. Your code must then be
+written to handle the different record definitions. We will discuss how to do that later in this chapter.
+
+Primitive Data Types
+
+In the previous Avro schema examples, we have only shown strings and integers. The complete list of primitive types which Avro supports are:
+
+• null
+
+No value.
+
+• boolean
+
+A binary value.
+
+• int
+
+A 32-bit signed integer.
+
+• long
+
+A 64-bit signed integer.
+
+• float
+
+A single precision (32 bit) IEEE 754 floating-point number.
+
+• double
+
+A double precision (64-bit) IEEE 754 floating-point number.
+
+• bytes
+ 
+
+A sequence of 8-bit unsigned bytes.
+
+• string
+
+A Unicode character sequence.
+
+These primitive types do not have any specified attributes. Primitive type names are also defined type names. For example, the schema "string" is equivalent to:
+{"type" : "string"}
+
+Complex Data Types
+
+Beyond the primitive data types described in the previous section, Avro also supports six complex data types: Records, Enums, Arrays, Maps, Unions, and Fixed. They are described in this section.
+
+record
+
+A record represents an encapsulation of attributes that, all combined, describe a single thing. The attributes that an Avro record supports are:
+
+• name
+
+This is the record's name, and it is required. It is meant to identify the thing that the record describes. For example: PersonInformation or Automobiles or Hats or BankDeposit.
+
+Note that record names must begin with [A-Za-z_], and subsequently contain only [A-Za- z0-9_].
+
+• namespace
+
+A namespace is an optional attribute that uniquely identifies the record. It is optional, but it should be used when there is a chance that the record's name will collide with another record's name. For example, suppose you have a record that describes an employee. However, you might have several different types of employees: full-time, part time,
+and contractors. So you might then create all three types of records with the name EmployeeInfo, but then with namespaces such as FullTime, PartTime and Contractor. The fully qualified name for the records used to describe full time employees would then be FullTime.EmployeeInfo.
+
+Alternatively, if your store contains information for many different organizations, you might want to use a namespace that identifies the organization used by the record
+so as to avoid collisions in the record names. In this case, you could end up with fully qualified records with names such as My.Company.Manufacturing.EmployeeInfo and My.Company.Sales.EmployeeInfo.
+
+• doc
+
+This optional attribute simply provides documentation about the record. It is parsed and stored with the schema, and is available from the Schema object using the Avro API, but it is not used during serialization.
+ 
+
+• aliases
+
+This optional attribute provides a JSON array of strings that are alternative names for the record. Note that there is no such thing as a rename operation for JSON schema. So if you want to refer to a schema by a name other than what you initially defined in the name attribute, use an alias.
+
+• type
+
+A required attribute that is either the keyword record, or an embedded JSON schema definition. If this attribute is for the top-level schema definition, record must be used.
+
+• fields
+
+A required attribute that provides a JSON array which lists all of the fields in the schema. Each field must provide a name and a type attribute. Each field may provide doc, order, aliases and default attributes:
+
+• The name, type, doc and aliases attributes are used in the exact same way as described earlier in this section.
+
+As is the case with record names, field names must begin with [A-Za-z_], and subsequently contain only [A-Za-z0-9_].
+
+• The order attribute is optional, and it is ignored by Oracle NoSQL Database. For applications (other than Oracle NoSQL Database) that honor it, this attribute describes how this field impacts sort ordering of this record. Valid values are ascending, descending, or ignore. For more information on how this works, see http://http:// avro.apache.org/docs/current/spec.html#order.
+
+• The default attribute is optional, but highly recommended in order to support schema evolution. It provides a default value for the field that is used only for the purposes
+of schema evolution. Use of the default attribute does not mean that you can fail to initialize the field when creating a new value object; all fields must be initialized regardless of whether the default attribute is present.
+
+Schema evolution is described in Schema Evolution (page 37).
+
+Permitted values for the default attribute depend on the field's type. Default values for unions depend on the first field in the union. Default values for bytes and fixed fields are JSON strings.
+
+Enum
+
+Enums are enumerated types, and it supports the following attributes
+
+• name
+
+A required attribute that provides the name for the enum. This name must begin with [A- Za-z_], and subsequently contain only [A-Za-z0-9_].
+
+• namespace
+ 
+
+An optional attribute that qualifies the enum's name attribute.
+
+• aliases
+
+An optional attribute that provides a JSON array of alternative names for the enum.
+
+• doc
+
+An optional attribute that provides a comment string for the enum.
+
+• symbols
+
+A required attribute that provides the enum's symbols as an array of names. These symbols must begin with [A-Za-z_], and subsequently contain only [A-Za-z0-9_].
+
+For example:
+
+{ "type" : "enum", "name" : "Colors", "namespace" : "palette",
+"doc" : "Colors supported by the palette.",
+"symbols" : ["WHITE", "BLUE", "GREEN", "RED", "BLACK"]}
+
+Arrays
+
+Defines an array field. It only supports the items attribute, which is required. The items attribute identifies the type of the items in the array:
+
+{"type" : "array", "items" : "string"}
+
+Maps
+
+A map is an associative array, or dictionary, that organizes data as key-value pairs. The key for an Avro map must be a string. Avro maps supports only one attribute: values. This attribute is required and it defines the type for the value portion of the map.
+
+{"type" : "map", "values" : "int"}
+
+Unions
+
+A union is used to indicate that a field may have more than one type. They are represented as
+JSON arrays.
+
+For example, suppose you had a field that could be either a string or null. Then the union is represented as:
+
+["string", "null"]
+
+You might use this in the following way:
+
+{
+"type": "record", "namespace": "com.example", "name": "FullName",
+ 
+
+"fields": [
+{ "name": "first", "type": ["string", "null"] },
+{ "name": "last", "type": "string", "default" : "Doe" }
+]
+}
+
+Fixed
+
+A fixed type is used to declare a fixed-sized field that can be used for storing binary data. It has two required attributes: the field's name, and the size in 1-byte quantities.
+
+For example, to define a fixed field that is one kilobyte in size:
+
+{"type" : "fixed" , "name" : "bdata", "size" : 1048576}
+
+Using Avro Schemas
+
+Once you have defined your schema, you make use of it in your Oracle NoSQL Database application in the following way:
+
+1.	Add the schema to your store. See Managing Avro Schema in the Store (page 41) for information on how to do this.
+
+2.	Identify the schema to your application.
+
+3.	Serialize and/or deserialize Oracle NoSQL Database values which use the Avro data format. You use Avro bindings to perform the serialization functions. There are different bindings available to you, each of which offers pluses and negatives. We will describe the different bindings later in this section.
+
+Other than that, the mechanisms you use to read/write/delete records in the store do not change just because you are using the Avro data format with your values. Avro affects your code only where you manage your values.
+
+The following sections describe the bindings that you use to serialize and deserialize your data. The binding that you use defines how you provide your schema to the store.
+
+Schema Evolution
+
+Schema evolution is the term used for how the store behaves when Avro schema is changed after data has been written to the store using an older version of that schema. To change
+an existing schema, you update the schema as stored in its flat-text file, then add the new schema to the store using the ddl add-schema command with the -evolve flag.
+
+For example, if a middle name property is added to the FullName schema, it might be stored in a file named schema2.avsc, and then added to the store using the ddl add-schema command.
+
+Note that when you change schema, the new field must be given a default value. This
+prevents errors when clients using an old version of the schema create new values that will be missing the new field:
+ 
+
+{
+"type": "record", "namespace": "com.example", "name": "FullName", "fields": [
+{ "name": "first", "type": "string" },
+{ "name": "middle", "type": "string", "default": "" },
+{ "name": "last", "type": "string" }
+]
+}
+
+These are the modifications you can safely perform to your schema without any concerns:
+
+• A field with a default value is added.
+
+• A field that was previously defined with a default value is removed.
+
+• A field's doc attribute is changed, added or removed.
+
+• A field's order attribute is changed, added or removed.
+
+• A field's default value is added, or changed.
+
+• Field or type aliases are added, or removed.
+
+• A non-union type may be changed to a union that contains only the original type, or vice- versa.
+
+Beyond these kind of changes, there are unsafe changes that you can do which will either cause the schema to be rejected when you attempt to add it to the store, or which can be performed so long as you are careful about how you go about upgrading clients which use the schema. These type of issues are identified when you try to modify (evolve) schema that is currently enabled in the store. See Changing Schema (page 42) for details.
+
+Rules for Changing Schema
+
+There are a few rules you need to remember if you are modifying schema that is already in use in your store:
+
+1.	For best results, always provide a default value for the fields in your schema. This makes it possible to delete fields later on if you decide it is necessary. If you do not provide a default value for a field, you cannot delete that field from your schema.
+
+2.	You cannot change a field's data type. If you have decided that a field should be some data type other than what it was originally created using, then add a whole new field to your schema that uses the appropriate data type.
+
+3.	When adding a field to your schema, you must provide a default value for the field.
+
+4.	You cannot rename an existing field. However, if you want to access the field by some name other than what it was originally created using, add and use aliases for the field.
+ 
+
+Writer and Reader Schema
+
+When a schema is changed, multiple versions of the schema will exist and be maintained by the store. The version of the schema used to serialize a value, before writing it to the store, is called the writer schema. The writer schema is specified by the application when creating a binding. It is associated with the value when calling the binding's AvroBinding.toValue() method to serialize the data. This writer schema is associated internally with every stored value.
+
+The reader schema is used to deserialize a value after reading it from the store. Like the writer schema, the reader schema is specified by the client application when creating a binding. It is used to deserialize the data when calling the binding's AvroBinding.toObject() method, after reading a value from the store.
+
+How Schema Evolution Works
+
+Schema evolution is the automatic transformation of Avro schema. This transformation
+is between the version of the schema that the client is using (its local copy), and what is currently contained in the store. When the local copy of the schema is not identical to the schema used to write the value (that is, when the reader schema is different from the writer schema), this data transformation is performed. When the reader schema matches the schema used to write the value, no transformation is necessary.
+
+Schema evolution is applied only during deserialization. If the reader schema is different from the value's writer schema, then the value is automatically modified during deserialization to conform to the reader schema. To do this, default values are used.
+
+There are two cases to consider when using schema evolution: when you add a field and when you delete a field. Schema evolution takes care of both scenarios, so long as you originally assigned default values to the fields that were deleted, and assigned default values to the fields that were added.
+
+Adding Fields
+
+Suppose you had the following schema:
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "name", "type" : "string", "default" : ""}]
+}
+
+In version 2 of the schema, you add a field:
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "name", "type" : "string", "default" : ""},
+{"name" : "age", "type" : "int" , "default" : -1}]
+ 
+
+}
+
+In this scenario, a client that is using the new schema can deserialize a value that uses the old schema, even though the age field will be missing from the value. Upon deserialization, the value retrieved from the store will be automatically transformed such that the age field is contained in the value. The age field will be set to the default value, which is -1 in this case.
+
+The reverse also works. A client that is using the old version of the schema attempts can deserialize a value that was written using the new version of the schema. In this case, the value retrieved from the store contains the age field, which from the client perspective is unexpected. So upon deserialization the age field is automatically removed from the retrieved object.
+
+This has ramifications if you change your schema, and then have clients concurrently running that are using different schema versions. This scenario is not unusual in a large, distributed system of the type that Oracle NoSQL Database supports.
+
+In this scenario, you might see fields revert to their default value, even though no client has explicitly touched those fields. This can happen in the following way:
+
+1.	Client v.2 creates a my.example.userInfo record, and sets the age field to 38. Then it writes that value to the store. Client v.2 is using schema version 2.
+
+2.	Client v.1 reads the record. It is using version 1 of the schema, so the age field is automatically removed from the value during deserialization.
+
+Client v.1 modifies the name field and then writes the record back to the store. When it does this, the age field is missing from the value that it writes to the store.
+
+3.	Client v.2 reads the record again. Because the age field is missing from the record (because Client v.1 last wrote it), the age field is set to the default value, which is -1. This means that the value of the age field has reverted to the default, even though no client explicitly modified it.
+
+Deleting Fields
+
+Field deletion works largely the same way as field addition, with the same concern for field values automatically reverting to the default. Suppose you had the following trivial schema:
+
+{
+"type" : "record", "name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "name", "type" : "string", "default" : ""},
+{"name" : "age", "type" : "int" , "default" : -1}]
+
+}
+
+In version 2 of the schema, you delete the age field:
+
+{
+"type" : "record",
+ 
+
+"name" : "userInfo", "namespace" : "my.example",
+"fields" : [{"name" : "name", "type" : "string", "default" : ""}]
+}
+
+In this scenario, a client that is using the new schema can deserialize a value that uses the old schema, even though the age field is contained in that value. In this case, the age field is silently removed from the value during deserialization.
+
+Further, a client that is using the old version of the schema attempts can deserialize a value that uses the new version of the schema. In this case, the value retrieved from the store does not contain the age field. So upon deserialization, the age field is automatically inserted into the schema (because the reader schema requires it) and the default value is used for the newly inserted field.
+
+As with adding fields, this has ramifications if you change your schema, and then have clients concurrently running that are using different schema versions.
+
+1.	Client v.1 creates a my.example.userInfo record, and sets the age field to 38. Then it writes that value to the store. Client v.1 is using schema version 1.
+
+2.	Client v.2 reads the record. It is using version 2 of the schema, so it is not expecting the age field. As a result, the age field is automatically stripped from the value during deserialization.
+
+Client v.2 modifies the name field and then writes the record back to the store. When it does this, the age field is missing from the value that it writes to the store.
+
+3.	Client v.1 reads the record again. Because the age field is missing from the record (because Client v.2 last wrote it), the age field is automatically inserted into the value, using the default of -1. This means that the value of the age field has reverted to the default, even though no client explicitly modified it.
+
+Managing Avro Schema in the Store
+
+This section describes how to add, change, disable and enable, and show the Avro schema in your store.
+
+Adding Schema
+
+Avro schema is defined in a flat-text file, and then added to the store using the command line interface. For example, suppose you have schema defined in a file called my_schema.avsc. Then (assuming your store is running) you start your command line interface and add the schema like this:
+
+> java -jar <kvhome>/lib/kvstore.jar runadmin -port <port> -host <host>
+kv-> ddl add-schema -file my_schema.avsc
+
+Note that when adding schema to the store, some error checking is performed to ensure
+that the schema is correctly formed. Errors are problems that must be addressed before the schema can be added to the store. Warnings are problems that should be addressed, but are
+ 
+
+not so serious that the CLI refuses to add the schema. However, to add schema with Warnings, you must use the -force switch.
+
+As of this release, the only Error that can be produced is if a field's default value does not conform to the field's type. That is, if the schema provides an integer as the default value where a string is required.
+
+As of this release, the only Warning that can be produced is if the schema does not provide a default value for every field in the schema. Default values are required if you ever want to change (evolve) the schema. But in all other cases, the lack of a default value does no harm.
+
+Changing Schema
+
+To change (evolve) existing schema, use the -evolve flag:
+
+kv-> ddl add-schema -file my_schema.avsc -evolve
+
+Note that when changing schema in the store, some error checking is performed to ensure that schema evolution can be performed correctly. This error checking consists of comparing the new schema to all currently enabled versions of that schema.
+
+This error checking can result in either Errors or Warnings. Errors are fatal problems that must be addressed before the modified schema can be added to the store. Errors represent situations where data written with an old version of the schema cannot be read by clients using a new version of the schema.
+
+Possible errors are:
+
+• A field is added without a default value.
+
+• The size of a fixed type is changed.
+
+• An enum symbol is removed.
+
+• A union type is removed or, equivalently, a union type is changed to a non-union type and the new type is not the sole type in the old union.
+
+• A change to a field's type (specifically to a different type name) is considered an error except when it is a type promotion, as defined by the Avro spec. And even a type promotion is a warning; see below. Another exception is changing from a non-union to a union; see below.
+
+Warnings are problems that can be avoided using a a two-phase upgrade process. In a two- phase upgrade, all clients begin using the schema only for reading in phase I (the old schema
+is still used for writing), and then use the new schema for both reading and writing in phase II. Phase II may not be begun until phase I is complete; that is, no client may use the new schema for writing until all clients are using it for reading.
+
+Possible Warnings are:
+
+• A field is deleted in the new schema when it does not contain a default value in the old schema.
+
+
+
+
+
+
+
+• An enum symbol is added.
+
+• A union type is added or, equivalently, a non-union type is changed to a union that includes the original type and additional types.
+
+• A field's type is promoted, as defined by the Avro spec. Type promotions are: int to long, float or double; long to float or double; float to double.
+
+Disabling and Enabling Schema
+
+You cannot delete schema, but you can disable it:
+
+kv-> ddl disable-schema -name avro.MyInfo.1
+
+
+To enable schema that has been disabled:
+
+kv-> ddl enable-schema -name avro.MyInfo.1
+
+Showing Schema
+
+To see all the schemas currently enabled in your store:
+
+kv-> show schemas
+
+
+To see all schemas, including those which are currently disabled:
+
+kv-> show schemas -disabled
+ 
+
